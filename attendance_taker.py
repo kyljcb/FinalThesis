@@ -157,23 +157,65 @@ class Face_Recognizer:
                                  cv2.LINE_AA)
     # insert data in database
 
+    import mysql.connector
+    from mysql.connector import Error
+
+    def create_connection(self):
+        try:
+            connection = self.mysql.connector.connect(
+                host='192.168.1.127',  # IP address of your Windows laptop
+                user='puphas',
+                password='Puphas-2024',
+                database='puphas'  # Name of your database
+            )
+            if connection.is_connected():
+                print("Connected to MySQL database")
+                return connection
+        except self.Error as e:
+            print(f"Error: {e}")
+            return None
+
+    def insert_data(self, connection):
+        try:
+            cursor = connection.cursor()
+            cursor.execute(
+                "INSERT INTO attendance (id_number, room, time, date, status, schedule_id) VALUES ('2020-12082-MN-0', '12', '17:50:00', '2024-05-17', 'Late', '66')")
+            connection.commit()
+            print("Data inserted successfully")
+        except Error as e:
+            print(f"Error: {e}")
+
     def attendance(self, name):
-        current_date = datetime.datetime.now().strftime('%Y-%m-%d')
-        conn = sqlite3.connect("attendance.db")
-        cursor = conn.cursor()
+        conn = self.create_connection()
+        if conn:
+            cursor = conn.cursor()
+            # Check if the name already has an entry for the current date
+            cursor.execute("SELECT * FROM attendance WHERE id_number = %s AND date = %s",
+                           ('2020-12100-MN-0', '2024-05-17'))
+            existing_entry = cursor.fetchone()
+
+            if existing_entry:
+                print(f"{name} is already marked as present for {current_date}")
+            else:
+                self.insert_data(conn)
+            conn.close()
+
+        # current_date = datetime.datetime.now().strftime('%Y-%m-%d')
+        # conn = sqlite3.connect("attendance.db")
+        # cursor = conn.cursor()
         # Check if the name already has an entry for the current date
-        cursor.execute("SELECT * FROM attendance WHERE name = ? AND date = ?", (name, current_date))
-        existing_entry = cursor.fetchone()
+        # cursor.execute("SELECT * FROM attendance WHERE name = ? AND date = ?", (name, current_date))
+        # existing_entry = cursor.fetchone()
 
-        if existing_entry:
-            print(f"{name} is already marked as present for {current_date}")
-        else:
-            current_time = datetime.datetime.now().strftime('%H:%M:%S')
-            cursor.execute("INSERT INTO attendance (name, time, date) VALUES (?, ?, ?)", (name, current_time, current_date))
-            conn.commit()
-            print(f"{name} marked as present for {current_date} at {current_time}")
+        # if existing_entry:
+        #     print(f"{name} is already marked as present for {current_date}")
+        # else:
+        #     current_time = datetime.datetime.now().strftime('%H:%M:%S')
+        #     cursor.execute("INSERT INTO attendance (name, time, date) VALUES (?, ?, ?)", (name, current_time, current_date))
+        #     conn.commit()
+        #     print(f"{name} marked as present for {current_date} at {current_time}")
 
-        conn.close()
+        # conn.close()
 
     #  Face detection and recognition wit OT from input video stream
     def process(self, stream):
